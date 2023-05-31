@@ -1,0 +1,356 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet"
+        integrity="sha384-1BmE4kWBq78iYhFldvKuhfTAU6auU8tT94WrHftjDbrCEXSU1oBoqyl2QvZ6jIW3" crossorigin="anonymous">
+
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <link rel="shortcut icon" href="#">
+
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500&display=swap" rel="stylesheet">
+
+    <link rel="stylesheet" href="style.css">
+
+
+    <title>My satellite orbit</title> <!-- 탭 제목-->
+    <style>
+        /* 따로 정의한 CSS style */
+        .container {
+            width: 1500px;
+            background: white;
+        }
+    </style>
+</head>
+
+<body>
+    <header>
+        <nav class="container navbar navbar-light bg-light">
+            <div class="container-fluid">
+                <span class="navbar-brand mb-0 h1">Satellite orbit analysis</span>
+            </div>
+        </nav>
+
+    </header>
+
+    <main class="container pb-3">
+
+        <!-- 인공위성 선택 -->
+        <div class="row pt-2">
+            <div class="col-1 text-end pe-2"><strong>Satellites</strong></div>
+            <div class="col-11">
+                <div class="form-check form-check-inline">
+                    <input class="form-check-input" type="radio" name="x-encoding" value="k3" id="satellite_k3"
+                        checked>
+                    <label class="form-check-label" for="satellite_k3">K3</label>
+                </div>
+                <div class="form-check form-check-inline">
+                    <input class="form-check-input" type="radio" name="x-encoding" value="k3a" id="satellite_k3a">
+                    <label class="form-check-label" for="satellite_k3a">K3A</label>
+                </div>
+                <div class="form-check form-check-inline">
+                    <input class="form-check-input" type="radio" name="x-encoding" value="k5" id="satellite_k5">
+                    <label class="form-check-label" for="satellite_k5">K5</label>
+                </div>
+            </div>
+        </div>
+
+        <!-- Attributes 선택 -->
+        <div class="row">
+            <div class="col-1 text-end pe-2"><strong>Attributes</strong></div>
+            <div class="col-11">
+                <div class="form-check form-check-inline">
+                    <input class="form-check-input" type="radio" name="y-encoding" value="semi_major_axis" id="semi"
+                        checked>
+                    <label class="form-check-label" for="semi">Semi-major axis</label>
+                </div>
+                <div class="form-check form-check-inline">
+                    <input class="form-check-input" type="radio" name="y-encoding" value="eccentricity" id="ecce"
+                        >
+                    <label class="form-check-label" for="ecce">Eccentricity</label>
+                </div>
+                <div class="form-check form-check-inline">
+                    <input class="form-check-input" type="radio" name="y-encoding" value="inclination" id="incl"
+                        >
+                    <label class="form-check-label" for="incl">Inclination</label>
+                </div>
+                <div class="form-check form-check-inline">
+                    <input class="form-check-input" type="radio" name="y-encoding" value="RAAN" id="raan"
+                        >
+                    <label class="form-check-label" for="raan">RAAN</label>
+                </div>
+                <div class="form-check form-check-inline">
+                    <input class="form-check-input" type="radio" name="y-encoding" value="arg_perigee" id="argu"
+                        >
+                    <label class="form-check-label" for="argu">Argument of perigee</label>
+                </div>
+                <div class="form-check form-check-inline">
+                    <input class="form-check-input" type="radio" name="y-encoding" value="mean_anomaly" id="mean"
+                        >
+                    <label class="form-check-label" for="mean">Mean anomaly</label>
+                </div>
+                <div class="form-check form-check-inline">
+                    <input class="form-check-input" type="radio" name="y-encoding" value="altitude" id="alti"
+                        >
+                    <label class="form-check-label" for="alti">Altitude</label>
+                </div>
+            </div>
+        </div>
+        <!-- Maneuver 가시화 -->
+        <div class="row">
+            <div class="col offset-1">
+                <div class="form-check form-switch">
+                    <input class="form-check-input" type="checkbox" role="switch" id="correlation">
+                    <label class="form-check-label" for="correlation">View Correlation</label>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 기간 선택(period; 슬라이드 바) -->
+        <div class="values">
+            <span id="range1">
+                0
+            </span>
+            <span> &dash; </span>
+            <span id="range2">
+                100
+            </span>            
+        </div>
+        <div class="container">
+            <div class="slider-track"></div>
+            <input type="range" min="0" max="100" value="0" id="slider-1" oninput="slideOne()">
+            <input type="range" min="0" max="100" value="100" id="slider-2" oninput="slideTwo()">
+            
+        </div>
+        <script src="components/slider_bar.js"></script>
+        <br>
+        <br>
+        <table class="table table-striped text-center" id="all_table" style="display:none">
+            <thead>
+                <tr>
+                    <th>Timestamp</th>
+                    <th>Semi-major axis</th>
+                    <th>Eccentricity</th>
+                    <th>Inclination</th>
+                    <th>RAAN</th>
+                    <th>Argument of perigee</th>
+                    <th>Mean anomaly</th>
+                    <th>Altitude</th>
+                </tr>
+            </thead>
+            <tbody id="data-table">
+    
+            </tbody>
+        </table>
+
+        <!-- Line chart, Distribution chart -->
+        <script type="module">
+            import define from "./components/d3_line.js";
+            import { Runtime, Library, Inspector } from "./components/runtime.js";
+            // Pie chart 그리기
+            import define3 from "./components/d3_parallel.js";
+            let runtime3 = new Runtime();
+            let main3
+            
+
+            // Pie chart 그리기
+            import define2 from "./components/d3_pie.js";
+            let runtime2 = new Runtime();
+            let main2 = runtime2.module(define2, Inspector.into(document.body));
+            
+            // line chart 그리기
+            let runtime = new Runtime();
+            let main = runtime.module(define, Inspector.into(document.body));
+
+
+            // Distribution chart 그리기
+            import define1 from "./components/d3_histogram.js";
+            let runtime1 = new Runtime();
+            let main1 = runtime1.module(define1, Inspector.into(document.body));
+
+            
+
+            // HTML에 object와 function 뜨는 것 지우기
+            let svgElement = document.getElementsByClassName("observablehq")
+            const ele_len = svgElement.length;
+            let now_idx = 0
+            if (ele_len > 0) {
+                for(let j=0; j<ele_len; j++){
+                    if (j%3 != 0) {
+                        svgElement[now_idx].remove();
+                    } else{
+                        now_idx++
+                    }
+                }                 
+            }
+
+            // 이벤트 발생 시 lince chart 다시 그리기
+            function update_attributes(){
+                if(d3.select("#correlation").property("checked")){ // View Correlation이면
+                    // 현재 Correlation mode 이기 때문에 그대로 둠
+                } else {
+                    svgElement = document.getElementsByClassName("observablehq")
+                    let i = 0
+                    if (svgElement.length > 0) {
+                        while(svgElement.length!=0){
+                            svgElement[i].remove();
+                        }
+                        i++;                      
+                    }
+                    runtime2 = new Runtime();
+                    main2 = runtime2.module(define2, Inspector.into(document.body));
+                    runtime = new Runtime(); // line chart
+                    main = runtime.module(define, Inspector.into(document.body));
+                    runtime1 = new Runtime(); // distribution chart
+                    main1 = runtime1.module(define1, Inspector.into(document.body));
+
+                    svgElement = document.getElementsByClassName("observablehq")
+                    const ele_len = svgElement.length;
+                    now_idx = 0
+                    if (ele_len > 0) {
+                        for(let j=0; j<ele_len; j++){
+                            if (j%3 != 0) {
+                                svgElement[now_idx].remove();
+                            } else{
+                                now_idx++
+                            }
+                        }                 
+                    }
+                }
+            }
+
+            // Correlation 그리기
+            function select_correlation(){
+                changeTable();
+                if(d3.select("#correlation").property("checked")){ // View Correlation이면
+                    document.getElementById("all_table").style.display="block";
+                    svgElement = document.getElementsByClassName("observablehq")
+                    let i = 0
+                    if (svgElement.length > 0) {
+                        while(svgElement.length!=0){
+                            svgElement[i].remove();
+                        }
+                        i++;                      
+                        }
+                    runtime3 = new Runtime();
+                    main3 = runtime3.module(define3, Inspector.into(document.body));
+
+                    updateDataTable();
+                } else {
+                    document.getElementById("all_table").style.display="none";
+                    svgElement = document.getElementsByClassName("observablehq")
+                    let i = 0
+                    if (svgElement.length > 0) {
+                        while(svgElement.length!=0){
+                            svgElement[i].remove();
+                    }
+                    i++;                      
+                  }
+
+                runtime2 = new Runtime();
+                main2 = runtime2.module(define2, Inspector.into(document.body));
+                runtime = new Runtime(); // line chart
+                main = runtime.module(define, Inspector.into(document.body));
+                runtime1 = new Runtime(); // distribution chart
+                main1 = runtime1.module(define1, Inspector.into(document.body));
+                
+
+                svgElement = document.getElementsByClassName("observablehq")
+                const ele_len = svgElement.length;
+                now_idx = 0
+                if (ele_len > 0) {
+                    for(let j=0; j<ele_len; j++){
+                        if (j%3 != 0) {
+                            svgElement[now_idx].remove();
+                        } else{
+                            now_idx++
+                        }
+                    }                 
+                }
+                }
+            }
+
+            // satellite 종류 선택 시 이벤트
+            d3.selectAll("input[type=radio][name=x-encoding]").on("change", select_correlation);
+
+            // Attributes 선택 시 이벤트
+            d3.selectAll("input[type=radio][name=y-encoding]").on("change", select_correlation);
+
+            // Correlation 선택 시 이벤트
+            d3.select("#correlation").on("change", select_correlation);
+            
+            // period의 왼쪽 선택 시 이벤트
+            const left_slider = document.getElementById("slider-1");
+            left_slider.addEventListener("change", function(e) {
+                update_attributes()
+            })
+
+            // period의 오른쪽 선택 시 이벤트
+            const right_slider = document.getElementById("slider-2");
+            right_slider.addEventListener("change", function(e) {
+                update_attributes()
+            })
+        </script>
+        
+        <script src="components/datatable.js"></script>
+        <script>
+            let data, dataTable
+            
+            function updateDataTable() {
+                //dataTable.update(data, data.columns)
+                dataTable.update(data, ["timestamp", "semi_major_axis", "eccentricity", "inclination", "RAAN", "arg_perigee", "mean_anomaly", "altitude"]);
+            }
+
+            function changeTable() {
+                //d3.csv("https://raw.githubusercontent.com/ClassOfficer/infovis/main/"+d3.select("input[type=radio][name=x-encoding]:checked").property("value")+".csv") // 데이터 불러오기
+                d3.csv("./data/"+d3.select("input[type=radio][name=x-encoding]:checked").property("value")+".csv") // 데이터 불러오기
+                .then(csvData => {
+                    csvData.forEach(d => {  // 각 열에 해당하는 데이터 불러오기
+                    d["timestamp"] = d["timestamp"];
+                    d["semi_major_axis"] = +d["semi_major_axis"]; // 여기서 +는 문자열을 숫자로 변환하는 것을 말함
+                    d["eccentricity"] = +d["eccentricity"];
+                    d["inclination"] = +d["inclination"];
+                    d["RAAN"] = +d["RAAN"];
+                    d["arg_perigee"] = +d["arg_perigee"];
+                    d["mean_anomaly"] = +d["mean_anomaly"];
+                    d["altitude"] = +d["altitude"];
+                });
+                data = csvData;
+
+                dataTable = new DataTable("#data-table");
+                updateDataTable();
+            });
+            }
+
+            // d3.csv("https://raw.githubusercontent.com/ClassOfficer/infovis/main/"+d3.select("input[type=radio][name=x-encoding]:checked").property("value")+".csv") // 데이터 불러오기
+            d3.csv("./data/"+d3.select("input[type=radio][name=x-encoding]:checked").property("value")+".csv") // 데이터 불러오기
+                .then(csvData => {
+                    csvData.forEach(d => {  // 각 열에 해당하는 데이터 불러오기
+                    d["timestamp"] = d["timestamp"];
+                    d["semi_major_axis"] = +d["semi_major_axis"]; // 여기서 +는 문자열을 숫자로 변환하는 것을 말함
+                    d["eccentricity"] = +d["eccentricity"];
+                    d["inclination"] = +d["inclination"];
+                    d["RAAN"] = +d["RAAN"];
+                    d["arg_perigee"] = +d["arg_perigee"];
+                    d["mean_anomaly"] = +d["mean_anomaly"];
+                    d["altitude"] = +d["altitude"];
+                });
+                data = csvData;
+
+                dataTable = new DataTable("#data-table");
+                updateDataTable();
+            });
+        </script>
+    </main>
+    
+
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"
+        integrity="sha384-ka7Sk0Gln4gmtz2MlQnikT1wXgYsOg+OMhuP+IlRH9sENBO0LRn5q+8nbTov4+1p"
+        crossorigin="anonymous"></script>
+</body>
+
+</html>

@@ -1,0 +1,7 @@
+{
+  "dependencies": {
+    "@d3/line-with-tooltip": "https://api.observablehq.com/@d3/line-with-tooltip@331.tgz?v=3",
+    "@observablehq/runtime": "^5.7.2"
+  },
+  "type": "module"
+}
